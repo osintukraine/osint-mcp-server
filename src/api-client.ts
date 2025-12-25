@@ -372,13 +372,15 @@ export class OsintApiClient {
     days?: number;
     limit?: number;
   }) {
-    return this.get('/api/analytics/distribution/topics', params);
+    // API uses unified /distributions endpoint with metrics param
+    return this.get('/api/analytics/distributions', { ...params, metrics: 'topics' });
   }
 
   async getLanguageDistribution(params?: {
     days?: number;
   }) {
-    return this.get('/api/analytics/distribution/languages', params);
+    // API uses unified /distributions endpoint with metrics param
+    return this.get('/api/analytics/distributions', { ...params, metrics: 'languages' });
   }
 
   async getChannelAnalytics(params?: {

@@ -1,28 +1,48 @@
 {
-  "name": "osint-mcp-server",
+  "name": "@osintukraine/mcp-server",
   "version": "2.0.0",
-  "description": "MCP server for OSINT Intelligence Platform API",
+  "description": "MCP server for OSINT Intelligence Platform - 65+ tools for Telegram intelligence analysis",
   "type": "module",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
     "osint-mcp-server": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
     "inspector": "npx @anthropic-ai/mcp-inspector node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "osint",
     "telegram",
     "intelligence",
-    "claude"
+    "claude",
+    "anthropic",
+    "ai",
+    "llm",
+    "analysis"
   ],
-  "author": "OSINT Ukraine",
+  "author": "OSINT Ukraine <info@osintukraine.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/osintukraine/osint-mcp-server.git"
+  },
+  "homepage": "https://github.com/osintukraine/osint-mcp-server#readme",
+  "bugs": {
+    "url": "https://github.com/osintukraine/osint-mcp-server/issues"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "zod": "^3.23.8"
@@ -33,5 +53,8 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

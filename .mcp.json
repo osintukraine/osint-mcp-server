@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "osint": {
+      "command": "node",
+      "args": ["/home/rick/code/osintukraine/osint-mcp-server/dist/index.js"],
+      "env": {
+        "OSINT_API_URL": "https://v2.osintukraine.com"
+      }
+    }
+  }
+}

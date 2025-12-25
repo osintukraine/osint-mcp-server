@@ -29,12 +29,14 @@ export class OsintApiClient {
 
     // Authentication priority:
     // 1. JWT token (standalone auth)
-    // 2. API Key (programmatic access)
+    // 2. API Key (programmatic access) - uses Bearer auth with ak_ prefix
     // 3. Ory Kratos headers (when behind Oathkeeper proxy)
     if (config.jwtToken) {
       this.headers['Authorization'] = `Bearer ${config.jwtToken}`;
     } else if (config.apiKey) {
-      this.headers['X-API-Key'] = config.apiKey;
+      // API keys use Bearer auth, same as JWT tokens
+      // Keys start with ak_ prefix (e.g., ak_abc123...)
+      this.headers['Authorization'] = `Bearer ${config.apiKey}`;
     } else if (config.oryUserId) {
       // Ory Kratos/Oathkeeper authentication
       // These headers are normally injected by Oathkeeper proxy,

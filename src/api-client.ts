@@ -1,8 +1,9 @@
 /**
  * OSINT Platform API Client
  *
- * HTTP client for communicating with the OSINT Intelligence Platform REST API.
- * Supports JWT authentication, API keys, and anonymous access.
+ * Comprehensive HTTP client for the OSINT Intelligence Platform REST API.
+ * Covers all major endpoints for messages, search, entities, events, analytics,
+ * social graph, map, validation, admin stats, and system monitoring.
  */
 
 export interface ApiClientConfig {
@@ -16,13 +17,12 @@ export class OsintApiClient {
   private headers: Record<string, string>;
 
   constructor(config: ApiClientConfig) {
-    this.baseUrl = config.baseUrl.replace(/\/$/, ''); // Remove trailing slash
+    this.baseUrl = config.baseUrl.replace(/\/$/, '');
     this.headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
 
-    // Add authentication if provided
     if (config.jwtToken) {
       this.headers['Authorization'] = `Bearer ${config.jwtToken}`;
     } else if (config.apiKey) {
@@ -30,9 +30,6 @@ export class OsintApiClient {
     }
   }
 
-  /**
-   * Make a GET request to the API
-   */
   async get<T>(endpoint: string, params?: Record<string, string | number | boolean | undefined>): Promise<T> {
     const url = new URL(`${this.baseUrl}${endpoint}`);
 
@@ -57,9 +54,6 @@ export class OsintApiClient {
     return response.json() as Promise<T>;
   }
 
-  /**
-   * Make a POST request to the API
-   */
   async post<T>(endpoint: string, body?: unknown): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'POST',
@@ -76,7 +70,7 @@ export class OsintApiClient {
   }
 
   // =============================================================================
-  // Messages
+  // MESSAGES
   // =============================================================================
 
   async searchMessages(params: {
@@ -88,7 +82,12 @@ export class OsintApiClient {
     importance_level?: string;
     topic?: string;
     has_media?: boolean;
+    media_type?: string;
     is_spam?: boolean;
+    language?: string;
+    min_views?: number;
+    min_forwards?: number;
+    channel_folder?: string;
     page?: number;
     page_size?: number;
   }) {
@@ -103,8 +102,31 @@ export class OsintApiClient {
     return this.get(`/api/messages/${messageId}/adjacent`);
   }
 
+  async getMessageAlbum(messageId: number) {
+    return this.get(`/api/messages/${messageId}/album`);
+  }
+
+  async getMessageNetwork(messageId: number, params?: {
+    include_similar?: boolean;
+    similarity_threshold?: number;
+    max_similar?: number;
+  }) {
+    return this.get(`/api/messages/${messageId}/network`, params);
+  }
+
+  async getMessageTimeline(messageId: number, params?: {
+    before_count?: number;
+    after_count?: number;
+    same_channel_only?: boolean;
+    use_semantic?: boolean;
+    use_events?: boolean;
+    similarity_threshold?: number;
+  }) {
+    return this.get(`/api/messages/${messageId}/timeline`, params);
+  }
+
   // =============================================================================
-  // Semantic Search
+  // SEMANTIC SEARCH
   // =============================================================================
 
   async semanticSearch(params: {
@@ -112,6 +134,7 @@ export class OsintApiClient {
     similarity_threshold?: number;
     limit?: number;
     channel_id?: number;
+    importance_level?: string;
     days?: number;
   }) {
     return this.get('/api/semantic/search', params);
@@ -124,8 +147,23 @@ export class OsintApiClient {
     return this.get(`/api/semantic/similar/${messageId}`, params);
   }
 
+  async getTags(params?: {
+    tag_type?: string;
+    limit?: number;
+  }) {
+    return this.get('/api/semantic/tags', params);
+  }
+
+  async searchByTags(params: {
+    tags: string;
+    match_all?: boolean;
+    limit?: number;
+  }) {
+    return this.get('/api/semantic/tags/search', params);
+  }
+
   // =============================================================================
-  // Unified Search
+  // UNIFIED SEARCH
   // =============================================================================
 
   async unifiedSearch(params: {
@@ -134,12 +172,17 @@ export class OsintApiClient {
     types?: string;
     limit_per_type?: number;
     days?: number;
+    location?: string;
+    lat?: number;
+    lng?: number;
+    radius_km?: number;
+    bounds?: string;
   }) {
     return this.get('/api/search', params);
   }
 
   // =============================================================================
-  // Channels
+  // CHANNELS
   // =============================================================================
 
   async listChannels(params?: {
@@ -160,8 +203,67 @@ export class OsintApiClient {
     return this.get(`/api/channels/${channelId}/stats`);
   }
 
+  async getChannelNetwork(channelId: number, params?: {
+    similarity_threshold?: number;
+    max_messages?: number;
+    time_window?: string;
+    include_clusters?: boolean;
+  }) {
+    return this.get(`/api/channels/${channelId}/network`, params);
+  }
+
   // =============================================================================
-  // Entities
+  // SOCIAL GRAPH
+  // =============================================================================
+
+  async getMessageSocialGraph(messageId: number, params?: {
+    include_forwards?: boolean;
+    include_replies?: boolean;
+    max_depth?: number;
+    max_comments?: number;
+  }) {
+    return this.get(`/api/social-graph/messages/${messageId}`, params);
+  }
+
+  async getChannelInfluence(channelId: number) {
+    return this.get(`/api/social-graph/channels/${channelId}/influence`);
+  }
+
+  async getInfluenceNetwork(params?: {
+    min_forwards?: number;
+    days?: number;
+    limit?: number;
+  }) {
+    return this.get('/api/social-graph/influence-network', params);
+  }
+
+  async getEngagementTimeline(messageId: number) {
+    return this.get(`/api/social-graph/messages/${messageId}/engagement-timeline`);
+  }
+
+  async getMessageComments(messageId: number, params?: {
+    limit?: number;
+    offset?: number;
+  }) {
+    return this.get(`/api/social-graph/messages/${messageId}/comments`, params);
+  }
+
+  async getTopForwarded(params?: {
+    days?: number;
+    limit?: number;
+  }) {
+    return this.get('/api/social-graph/virality/top-forwarded', params);
+  }
+
+  async getTopInfluencers(params?: {
+    days?: number;
+    limit?: number;
+  }) {
+    return this.get('/api/social-graph/influencers', params);
+  }
+
+  // =============================================================================
+  // ENTITIES
   // =============================================================================
 
   async searchEntities(params: {
@@ -173,44 +275,64 @@ export class OsintApiClient {
     return this.get('/api/entities/search', params);
   }
 
-  async getEntity(entityId: string) {
-    return this.get(`/api/entities/${entityId}`);
+  async getEntity(source: string, entityId: string, params?: {
+    include_linked?: boolean;
+  }) {
+    return this.get(`/api/entities/${source}/${entityId}`, params);
   }
 
-  async getEntityRelationships(entityId: string) {
-    return this.get(`/api/entities/${entityId}/relationships`);
+  async getEntityRelationships(source: string, entityId: string, params?: {
+    refresh?: boolean;
+  }) {
+    return this.get(`/api/entities/${source}/${entityId}/relationships`, params);
   }
 
-  async getEntityLinkedMessages(entityId: string, params?: {
+  async getEntityMessages(source: string, entityId: string, params?: {
     limit?: number;
     offset?: number;
   }) {
-    return this.get(`/api/entities/${entityId}/messages`, params);
+    return this.get(`/api/entities/${source}/${entityId}/messages`, params);
   }
 
   // =============================================================================
-  // Events/Clusters
+  // EVENTS / CLUSTERS
   // =============================================================================
 
   async listEvents(params?: {
-    tier?: string;
-    days?: number;
-    location?: string;
-    limit?: number;
+    page?: number;
+    page_size?: number;
+    tab?: 'active' | 'major' | 'archived' | 'all';
+    event_type?: string;
+    tier_status?: string;
+    search?: string;
+    search_mode?: 'text' | 'semantic';
+    similarity_threshold?: number;
   }) {
     return this.get('/api/events', params);
   }
 
-  async getEvent(eventId: number) {
-    return this.get(`/api/events/${eventId}`);
+  async getEventStats() {
+    return this.get('/api/events/stats');
   }
 
-  async getEventMessages(eventId: number) {
-    return this.get(`/api/events/${eventId}/messages`);
+  async getEvent(eventId: number, params?: {
+    include_messages?: boolean;
+    include_sources?: boolean;
+    message_limit?: number;
+  }) {
+    return this.get(`/api/events/${eventId}`, params);
+  }
+
+  async getEventTimeline(eventId: number) {
+    return this.get(`/api/events/${eventId}/timeline`);
+  }
+
+  async getEventsForMessage(messageId: number) {
+    return this.get(`/api/events/message/${messageId}`);
   }
 
   // =============================================================================
-  // Analytics
+  // ANALYTICS
   // =============================================================================
 
   async getTimelineStats(params?: {
@@ -229,59 +351,255 @@ export class OsintApiClient {
     days?: number;
     limit?: number;
   }) {
-    return this.get('/api/analytics/topics', params);
+    return this.get('/api/analytics/distribution/topics', params);
+  }
+
+  async getLanguageDistribution(params?: {
+    days?: number;
+  }) {
+    return this.get('/api/analytics/distribution/languages', params);
   }
 
   async getChannelAnalytics(params?: {
     days?: number;
     limit?: number;
   }) {
-    return this.get('/api/analytics/channels', params);
+    return this.get('/api/analytics/channels/activity', params);
   }
 
-  // =============================================================================
-  // Social Graph
-  // =============================================================================
-
-  async getMessageSocialGraph(messageId: number) {
-    return this.get(`/api/messages/${messageId}/social-graph`);
-  }
-
-  async getChannelNetwork(channelId: number, params?: {
-    depth?: number;
+  async getHeatmap(params?: {
+    days?: number;
   }) {
-    return this.get(`/api/channels/${channelId}/network`, params);
+    return this.get('/api/analytics/heatmap', params);
+  }
+
+  async getEntityAnalytics(params?: {
+    days?: number;
+    limit?: number;
+  }) {
+    return this.get('/api/analytics/entities', params);
+  }
+
+  async getMediaAnalytics() {
+    return this.get('/api/analytics/media');
   }
 
   // =============================================================================
-  // Map/Geo
+  // MAP / GEOLOCATION
   // =============================================================================
 
   async getMapMessages(params?: {
-    bbox?: string;
-    days?: number;
+    bounds?: string;
     zoom?: number;
+    cluster?: boolean;
+    cluster_grid_size?: number;
+    days?: number;
+    include_confidence?: boolean;
   }) {
     return this.get('/api/map/messages', params);
   }
 
   async getMapClusters(params?: {
-    bbox?: string;
-    tier?: string;
+    bounds?: string;
+    zoom?: number;
+    tier_status?: string;
     days?: number;
   }) {
     return this.get('/api/map/clusters', params);
   }
 
+  async getMapEvents(params?: {
+    bounds?: string;
+  }) {
+    return this.get('/api/map/events', params);
+  }
+
+  async getMapHeatmap(params?: {
+    zoom?: number;
+    bounds?: string;
+    grid_size?: number;
+  }) {
+    return this.get('/api/map/heatmap', params);
+  }
+
+  async suggestLocations(params: {
+    q: string;
+    limit?: number;
+  }) {
+    return this.get('/api/map/locations/suggest', params);
+  }
+
+  async reverseGeocode(params: {
+    lat: number;
+    lng: number;
+  }) {
+    return this.get('/api/map/locations/reverse', params);
+  }
+
   // =============================================================================
-  // System
+  // STREAM (Unified Intelligence Feed)
+  // =============================================================================
+
+  async getUnifiedStream(params?: {
+    limit?: number;
+    sources?: string;
+    categories?: string;
+    importance_level?: string;
+    hours?: number;
+  }) {
+    return this.get('/api/stream/unified', params);
+  }
+
+  // =============================================================================
+  // VALIDATION (RSS Cross-Reference)
+  // =============================================================================
+
+  async validateMessage(messageId: number) {
+    return this.get(`/api/validation/messages/${messageId}`);
+  }
+
+  async getCorrelations(messageId: number) {
+    return this.get(`/api/validation/messages/${messageId}/correlations`);
+  }
+
+  // =============================================================================
+  // COMMENTS
+  // =============================================================================
+
+  async getComment(commentId: number) {
+    return this.get(`/api/comments/${commentId}`);
+  }
+
+  async translateComment(commentId: number) {
+    return this.post(`/api/comments/${commentId}/translate`);
+  }
+
+  // =============================================================================
+  // MEDIA
+  // =============================================================================
+
+  async getMediaGallery(params?: {
+    channel_id?: number;
+    media_type?: string;
+    date_from?: string;
+    date_to?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    return this.get('/api/media/gallery', params);
+  }
+
+  // =============================================================================
+  // ADMIN - READ ONLY (Stats & Monitoring)
+  // =============================================================================
+
+  async getAdminDashboard() {
+    return this.get('/api/admin/dashboard');
+  }
+
+  async getAdminStatsOverview() {
+    return this.get('/api/admin/stats/overview');
+  }
+
+  async getAdminStatsQuality() {
+    return this.get('/api/admin/stats/quality');
+  }
+
+  async getAdminStatsProcessing(params?: {
+    hours?: number;
+  }) {
+    return this.get('/api/admin/stats/processing', params);
+  }
+
+  async getAdminStatsStorage() {
+    return this.get('/api/admin/stats/storage');
+  }
+
+  async getAdminWorkersStats() {
+    return this.get('/api/admin/system/workers/stats');
+  }
+
+  async getAdminEnrichmentTasks() {
+    return this.get('/api/admin/system/enrichment/tasks');
+  }
+
+  async getAdminCacheStats() {
+    return this.get('/api/admin/system/cache/stats');
+  }
+
+  async getAdminAuditStats() {
+    return this.get('/api/admin/system/audit/stats');
+  }
+
+  async getAdminSpamStats() {
+    return this.get('/api/admin/spam/stats');
+  }
+
+  async getAdminChannelsStats() {
+    return this.get('/api/admin/channels/stats');
+  }
+
+  async getAdminEntitiesStats() {
+    return this.get('/api/admin/entities/stats');
+  }
+
+  async getAdminFeedsStats() {
+    return this.get('/api/admin/feeds/rss/stats');
+  }
+
+  async getAdminPromptsStats() {
+    return this.get('/api/admin/prompts/stats');
+  }
+
+  async getAdminCommentsStats() {
+    return this.get('/api/admin/comments/stats');
+  }
+
+  async getAdminViralPosts() {
+    return this.get('/api/admin/comments/viral');
+  }
+
+  // =============================================================================
+  // SYSTEM HEALTH
   // =============================================================================
 
   async getHealth() {
     return this.get('/health');
   }
 
+  async getHardwareConfig() {
+    return this.get('/api/health/hardware');
+  }
+
   async getSystemStatus() {
     return this.get('/api/system/status');
+  }
+
+  async getMetricsOverview() {
+    return this.get('/api/metrics/overview');
+  }
+
+  async getMetricsLLM() {
+    return this.get('/api/metrics/llm');
+  }
+
+  async getMetricsPipeline() {
+    return this.get('/api/metrics/pipeline');
+  }
+
+  async getMetricsServices() {
+    return this.get('/api/metrics/services');
+  }
+
+  // =============================================================================
+  // MODELS (LLM Configuration)
+  // =============================================================================
+
+  async listModels() {
+    return this.get('/api/models');
+  }
+
+  async getModelHealth() {
+    return this.get('/api/models/health');
   }
 }

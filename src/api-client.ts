@@ -10,6 +10,10 @@ export interface ApiClientConfig {
   baseUrl: string;
   apiKey?: string;
   jwtToken?: string;
+  // Ory Kratos/Oathkeeper authentication
+  oryUserId?: string;
+  oryUserEmail?: string;
+  oryUserRole?: string;
 }
 
 export class OsintApiClient {
@@ -23,10 +27,25 @@ export class OsintApiClient {
       'Accept': 'application/json',
     };
 
+    // Authentication priority:
+    // 1. JWT token (standalone auth)
+    // 2. API Key (programmatic access)
+    // 3. Ory Kratos headers (when behind Oathkeeper proxy)
     if (config.jwtToken) {
       this.headers['Authorization'] = `Bearer ${config.jwtToken}`;
     } else if (config.apiKey) {
       this.headers['X-API-Key'] = config.apiKey;
+    } else if (config.oryUserId) {
+      // Ory Kratos/Oathkeeper authentication
+      // These headers are normally injected by Oathkeeper proxy,
+      // but can be set directly for MCP server access
+      this.headers['X-User-ID'] = config.oryUserId;
+      if (config.oryUserEmail) {
+        this.headers['X-User-Email'] = config.oryUserEmail;
+      }
+      if (config.oryUserRole) {
+        this.headers['X-User-Role'] = config.oryUserRole;
+      }
     }
   }
 

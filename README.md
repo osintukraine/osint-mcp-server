@@ -69,8 +69,22 @@ The server uses environment variables for configuration:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `OSINT_API_URL` | OSINT Platform API base URL | `http://localhost:8000` |
-| `OSINT_API_KEY` | API key for authentication | (none) |
+| **JWT Authentication** | | |
 | `OSINT_JWT_TOKEN` | JWT token for authentication | (none) |
+| **API Key Authentication** | | |
+| `OSINT_API_KEY` | API key for authentication | (none) |
+| **Ory Kratos Authentication** | | |
+| `OSINT_ORY_USER_ID` | Ory Kratos user UUID | (none) |
+| `OSINT_ORY_USER_EMAIL` | User email (optional) | (none) |
+| `OSINT_ORY_USER_ROLE` | User role: authenticated, admin | `authenticated` |
+
+### Authentication Priority
+
+The MCP server uses the first available authentication method:
+
+1. **JWT Token** - `OSINT_JWT_TOKEN` - Standalone JWT authentication
+2. **API Key** - `OSINT_API_KEY` - Programmatic API access
+3. **Ory Kratos** - `OSINT_ORY_USER_ID` - Ory identity headers (replicates Oathkeeper injection)
 
 ### Claude Code Configuration
 
@@ -90,7 +104,7 @@ Add a `.mcp.json` file to your project root:
 }
 ```
 
-With authentication (API key or JWT):
+With API Key authentication:
 
 ```json
 {
@@ -101,6 +115,25 @@ With authentication (API key or JWT):
       "env": {
         "OSINT_API_URL": "https://api.osint.example.com",
         "OSINT_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+With Ory Kratos authentication (when using Ory for identity management):
+
+```json
+{
+  "mcpServers": {
+    "osint": {
+      "command": "node",
+      "args": ["/path/to/osint-mcp-server/dist/index.js"],
+      "env": {
+        "OSINT_API_URL": "https://api.osint.example.com",
+        "OSINT_ORY_USER_ID": "your-kratos-user-uuid",
+        "OSINT_ORY_USER_EMAIL": "your-email@example.com",
+        "OSINT_ORY_USER_ROLE": "admin"
       }
     }
   }

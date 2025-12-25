@@ -32,13 +32,27 @@ import { OsintApiClient } from './api-client.js';
 // =============================================================================
 
 const API_BASE_URL = process.env.OSINT_API_URL || 'http://localhost:8000';
+
+// Authentication options (in priority order):
+// 1. JWT_TOKEN - Standalone JWT authentication
+// 2. API_KEY - API key authentication
+// 3. ORY_* - Ory Kratos/Oathkeeper headers
 const API_KEY = process.env.OSINT_API_KEY;
 const JWT_TOKEN = process.env.OSINT_JWT_TOKEN;
+
+// Ory Kratos authentication (when using Ory for identity management)
+// These replicate what Oathkeeper normally injects
+const ORY_USER_ID = process.env.OSINT_ORY_USER_ID;
+const ORY_USER_EMAIL = process.env.OSINT_ORY_USER_EMAIL;
+const ORY_USER_ROLE = process.env.OSINT_ORY_USER_ROLE || 'authenticated';
 
 const apiClient = new OsintApiClient({
   baseUrl: API_BASE_URL,
   apiKey: API_KEY,
   jwtToken: JWT_TOKEN,
+  oryUserId: ORY_USER_ID,
+  oryUserEmail: ORY_USER_EMAIL,
+  oryUserRole: ORY_USER_ROLE,
 });
 
 // =============================================================================
@@ -1163,8 +1177,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
+
+  // Determine auth mode for logging
+  let authMode = 'anonymous';
+  if (JWT_TOKEN) {
+    authMode = 'JWT token';
+  } else if (API_KEY) {
+    authMode = 'API key';
+  } else if (ORY_USER_ID) {
+    authMode = `Ory Kratos (${ORY_USER_EMAIL || ORY_USER_ID}, role: ${ORY_USER_ROLE})`;
+  }
+
   console.error('OSINT MCP Server v2.0.0 running');
   console.error(`API URL: ${API_BASE_URL}`);
+  console.error(`Auth: ${authMode}`);
   console.error(`Tools available: ${tools.length}`);
 }
 

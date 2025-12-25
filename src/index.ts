@@ -23,9 +23,15 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import { OsintApiClient } from './api-client.js';
+import { prompts, getPromptContent } from './prompts.js';
+import { resources, getResourceContent } from './resources.js';
 
 // =============================================================================
 // Configuration
@@ -1147,10 +1153,19 @@ async function handleToolCall(name: string, args: Record<string, unknown>): Prom
 // =============================================================================
 
 const server = new Server(
-  { name: 'osint-mcp-server', version: '2.0.0' },
-  { capabilities: { tools: {} } }
+  { name: 'osint-mcp-server', version: '2.1.0' },
+  {
+    capabilities: {
+      tools: {},
+      prompts: {},
+      resources: {},
+    },
+  }
 );
 
+// ---------------------------------------------------------------------------
+// Tools Handler
+// ---------------------------------------------------------------------------
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -1168,6 +1183,61 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       isError: true,
     };
   }
+});
+
+// ---------------------------------------------------------------------------
+// Prompts Handler - Guided Workflows
+// ---------------------------------------------------------------------------
+server.setRequestHandler(ListPromptsRequestSchema, async () => ({ prompts }));
+
+server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+
+  const prompt = prompts.find((p) => p.name === name);
+  if (!prompt) {
+    throw new Error(`Prompt not found: ${name}`);
+  }
+
+  const content = getPromptContent(name, args || {});
+
+  return {
+    description: prompt.description,
+    messages: [
+      {
+        role: 'user',
+        content: {
+          type: 'text',
+          text: content,
+        },
+      },
+    ],
+  };
+});
+
+// ---------------------------------------------------------------------------
+// Resources Handler - Platform Knowledge
+// ---------------------------------------------------------------------------
+server.setRequestHandler(ListResourcesRequestSchema, async () => ({ resources }));
+
+server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+  const { uri } = request.params;
+
+  const resource = resources.find((r) => r.uri === uri);
+  if (!resource) {
+    throw new Error(`Resource not found: ${uri}`);
+  }
+
+  const content = getResourceContent(uri);
+
+  return {
+    contents: [
+      {
+        uri,
+        mimeType: resource.mimeType,
+        text: content,
+      },
+    ],
+  };
 });
 
 // =============================================================================
@@ -1188,10 +1258,10 @@ async function main() {
     authMode = `Ory Kratos (${ORY_USER_EMAIL || ORY_USER_ID}, role: ${ORY_USER_ROLE})`;
   }
 
-  console.error('OSINT MCP Server v2.0.0 running');
+  console.error('OSINT MCP Server v2.1.0 running');
   console.error(`API URL: ${API_BASE_URL}`);
   console.error(`Auth: ${authMode}`);
-  console.error(`Tools available: ${tools.length}`);
+  console.error(`Tools: ${tools.length} | Prompts: ${prompts.length} | Resources: ${resources.length}`);
 }
 
 main().catch((error) => {

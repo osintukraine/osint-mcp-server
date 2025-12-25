@@ -74,7 +74,7 @@ The server uses environment variables for configuration:
 
 ### Claude Code Configuration
 
-Add to your `~/.claude/claude_code_settings.json`:
+Add a `.mcp.json` file to your project root:
 
 ```json
 {
@@ -90,7 +90,7 @@ Add to your `~/.claude/claude_code_settings.json`:
 }
 ```
 
-Or with authentication:
+With authentication (API key or JWT):
 
 ```json
 {
@@ -107,13 +107,15 @@ Or with authentication:
 }
 ```
 
+After adding the `.mcp.json` file, Claude Code will prompt you to enable the MCP server when you next start a session in that project.
+
 ### VS Code with Claude Extension
 
-Add to your project's `.vscode/mcp.json`:
+Add to your project's `.mcp.json` (same format as above) or `.vscode/mcp.json`:
 
 ```json
 {
-  "servers": {
+  "mcpServers": {
     "osint": {
       "command": "node",
       "args": ["${workspaceFolder}/../osint-mcp-server/dist/index.js"],
